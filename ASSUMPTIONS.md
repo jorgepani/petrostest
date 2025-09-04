@@ -25,11 +25,12 @@ EOF
 - I'll first evaluate a bottom-up solution with a complexity of O(n²)
 
 4th commit
-- I don't like this idea, it's been more or less easy but using mutable objects...
-- I also remember our conversation in the interview when I asked about if you have any 
+- I don't like the iterative idea, it's been more or less easy but using mutable objects...
+- I also remember our conversation in the interview when I asked you about if you have any 
 - eventual consistency issues or race conditions with your clients and I think my code should
 - work with that. I'm trying to figure out an idea using FP and recursion and 
 - I also would like to go from top to bottom and make the path in just one shot 
 - Trying to do it from top without any protections at all
 
-
+5th commit
+- Forgot to change the function to the top-down version
