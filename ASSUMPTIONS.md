@@ -23,3 +23,13 @@ EOF
 - I thought about a basic recursive solution but this has the potential to break the stack
 - This is because the same path could be processed several times so the complexity could become exponential
 - I'll first evaluate a bottom-up solution with a complexity of O(n²)
+
+4th commit
+- I don't like this idea, it's been more or less easy but using mutable objects...
+- I also remember our conversation in the interview when I asked about if you have any 
+- eventual consistency issues or race conditions with your clients and I think my code should
+- work with that. I'm trying to figure out an idea using FP and recursion and 
+- I also would like to go from top to bottom and make the path in just one shot 
+- Trying to do it from top without any protections at all
+
+
