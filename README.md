@@ -20,6 +20,10 @@ cat << EOF | java -jar petrostest-assembly-0.1.0-SNAPSHOT.jar
 11 2 10 9  
 EOF
 
+or
+
+cat data_small.txt | java -jar petrostest-assembly-0.1.0-SNAPSHOT.jar
+
 
 Who Owns This?
 ==============================
