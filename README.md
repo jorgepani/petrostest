@@ -11,6 +11,8 @@ Fixed after the third commit
 
 User Guide
 ==============================
+sbt assembly
+cd target/scala.2.13
 cat << EOF | java -jar petrostest-assembly-0.1.0-SNAPSHOT.jar
 7  
 6 3  

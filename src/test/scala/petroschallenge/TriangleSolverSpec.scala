@@ -3,7 +3,8 @@ package petroschallenge
 import cats.effect.unsafe.implicits.global
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
-import petroschallenge.TriangleSolver.{atomicTriangleResolver, atomicTriangleResolverWithDelay, solveFromBottomToTop, solveTriangleFromTop}
+import petroschallenge.solvers.AtomicTriangleSolver.atomicTriangleResolver
+import petroschallenge.solvers.{AtomicTriangleSolver, BottomUpSolver, TopDownSolver}
 
 class TriangleSolverSpec extends AnyFunSuite with Matchers {
 
@@ -18,7 +19,7 @@ class TriangleSolverSpec extends AnyFunSuite with Matchers {
       Vector(7, 3, 2, 4, 5),
       Vector(5, 4, 2, 6, 3, 7)
     )
-    val (sum, path) = solveFromBottomToTop(triangulo)
+    val (sum, path) = BottomUpSolver.solveTriangle(triangulo).unsafeRunSync()
     sum shouldBe 1 + 1 + 2 + 3 + 2 + 2 // 11
     path shouldBe Vector(1, 1, 2, 3, 2, 2)
   }
@@ -31,7 +32,7 @@ class TriangleSolverSpec extends AnyFunSuite with Matchers {
       Vector(3, 4),
       Vector(6, 5, 7)
     )
-    val (suma, camino) = solveFromBottomToTop(triangulo)
+    val (suma, camino) = BottomUpSolver.solveTriangle(triangulo).unsafeRunSync()
     suma shouldBe 2 + 3 + 5 // 10
     camino shouldBe Vector(2, 3, 5)
   }
@@ -47,7 +48,7 @@ class TriangleSolverSpec extends AnyFunSuite with Matchers {
       Vector(7, 3, 2, 4, 5),
       Vector(5, 4, 2, 6, 3, 7)
     )
-    val (sum, path) = solveTriangleFromTop(triangulo)
+    val (sum, path) = TopDownSolver.solveTriangle(triangulo).unsafeRunSync()
     sum shouldBe 1 + 1 + 2 + 3 + 2 + 2 // 11
     path shouldBe Vector(1, 1, 2, 3, 2, 2)
   }
@@ -60,7 +61,7 @@ class TriangleSolverSpec extends AnyFunSuite with Matchers {
       Vector(3, 4),
       Vector(6, 5, 7)
     )
-    val (suma, camino) = solveTriangleFromTop(triangulo)
+    val (suma, camino) = TopDownSolver.solveTriangle(triangulo).unsafeRunSync()
     suma shouldBe 2 + 3 + 5 // 10
     camino shouldBe Vector(2, 3, 5)
   }
@@ -105,7 +106,7 @@ class TriangleSolverSpec extends AnyFunSuite with Matchers {
       Vector(7, 3, 2, 4, 5),
       Vector(5, 4, 2, 6, 3, 7)
     )
-    val (sum, path) = atomicTriangleResolverWithDelay(triangulo).unsafeRunSync()
+    val (sum, path) = AtomicTriangleSolver.solveTriangle(triangulo).unsafeRunSync()
     sum shouldBe 1 + 1 + 2 + 3 + 2 + 2 // 11
     path shouldBe Vector(1, 1, 2, 3, 2, 2)
   }

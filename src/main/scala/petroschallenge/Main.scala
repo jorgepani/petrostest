@@ -3,11 +3,12 @@ package petroschallenge
 import cats.effect.{IO, IOApp}
 import fs2.io.stdin
 import fs2.text
+import petroschallenge.solvers.AtomicTriangleSolver
 import petroschallenge.util.Parser
 
 object Main extends IOApp.Simple {
   def run: IO[Unit] =
-    IO.println(s"atomicTriangleResolverWithDelay") *> //just for debugging
+    IO.println(s"atomicTriangleResolverWithDelay XX") *> //just for debugging
     stdin[IO](bufSize = 64 * 1024)
       .through(text.utf8.decode)
       .through(text.lines)
@@ -16,7 +17,7 @@ object Main extends IOApp.Simple {
       .evalMap(line => IO.fromEither(Parser.parseLine(line)))
       .compile
       .toVector
-      .flatMap(TriangleSolver.atomicTriangleResolverWithDelay)
+      .flatMap(AtomicTriangleSolver.solveTriangle)
       .flatMap { case (sum, minimalPath) =>
         IO.println(s"Minimal path is: ${minimalPath.mkString(" + ")} = $sum")
       }
