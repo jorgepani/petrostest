@@ -18,3 +18,8 @@ EOF
 2nd commit
 - I decided to use a Vector to move inside the triangle in an easy way
 - Creating and testing a parser
+
+3rd commit
+- I thought about a basic recursive solution but this has the potential to break the stack
+- This is because the same path could be processed several times so the complexity could become exponential
+- I'll first evaluate a bottom-up solution with a complexity of O(n²)

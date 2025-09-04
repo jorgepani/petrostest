@@ -15,6 +15,9 @@ object Main extends IOApp.Simple {
       .evalMap(line => IO.fromEither(Parser.parseLine(line)))
       .compile
       .toVector
-      .flatMap(n => IO.println(s"Triangle: $n"))
+      .map(TriangleSolver.solveFromBottomToTop)
+      .flatMap { case (suma, minimalPath) =>
+        IO.println(s"Minimal path is: ${minimalPath.mkString(" + ")} = $suma")
+      }
       .handleErrorWith(e => IO.println(s"Error: ${e.getMessage}"))
 }
