@@ -82,6 +82,7 @@ object TriangleSolver {
 
   type Key          = (Int, Int)
   type TriangleNode = (Int, Vector[Int])
+  type Gate         = Deferred[IO, Either[Throwable, TriangleNode]]
 
   def atomicTriangleResolver(
       triangle: Vector[Vector[Int]]
@@ -131,5 +132,61 @@ object TriangleSolver {
       go(0, 0) //Up to down
     }
   }
+
+  def atomicTriangleResolverWithDelay(triangle: Vector[Vector[Int]]): IO[TriangleNode] =
+    MapRef.ofConcurrentHashMap[IO, Key, Gate]().flatMap { memo =>
+      def goOncePerElement(row: Int, col: Int): IO[TriangleNode] = {
+        val cell = memo((row, col)) // Ref[IO, Option[Gate]] para esta clave
+
+        // Describe el cálculo del nodo (captura exceptions con IO.delay)
+        val compute: IO[TriangleNode] =
+          IO.delay(triangle(row)(col)).flatMap { v =>
+            if (row == triangle.length - 1) IO.pure((v, Vector(v)))
+            else
+              // Cede antes de ramificar para mejorar equidad bajo carga
+              IO.cede *> (goOncePerElement(row + 1, col), goOncePerElement(row + 1, col + 1)).parMapN {
+                case ((s1, p1), (s2, p2)) =>
+                  if (s1 <= s2) (v + s1, v +: p1) else (v + s2, v +: p2)
+              }
+          }
+
+        for {
+          existing <- cell.get
+          out <- existing match {
+            case Some(wait) =>
+              // Ya hay alguien calculándolo → esperamos su resultado (propaga error si lo hubo)
+              wait.get.rethrow
+
+            case None =>
+              for {
+                gate <- Deferred[IO, Either[Throwable, TriangleNode]]
+                // Reserva atómica por clave (single-flight)
+                claimed <- cell.modify {
+                  case s @ Some(w) => (s, Left(w))              // perdimos carrera → esperamos
+                  case None        => (Some(gate), Right(gate)) // ganamos → publicamos gate
+                }
+                res <- claimed match {
+                  case Left(w)  => w.get.rethrow
+                  case Right(g) =>
+                    // Completar SIEMPRE el gate y limpiar la clave en fallo/cancelación
+                    IO.uncancelable { poll =>
+                      poll(compute).guaranteeCase {
+                        case Outcome.Succeeded(ioV) =>
+                          ioV.flatMap(v => g.complete(Right(v))).void
+                        case Outcome.Errored(e) =>
+                          g.complete(Left(e)) *> cell.set(None)
+                        case Outcome.Canceled() =>
+                          g.complete(Left(new RuntimeException("Cancelled"))) *> cell.set(None)
+                      }
+                    }
+                }
+              } yield res
+          }
+        } yield out
+      }
+
+      goOncePerElement(0, 0)
+
+    }
 
 }

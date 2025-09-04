@@ -1,4 +1,4 @@
-Assumptions 
+Assumptions - comments
 ==============================
 
 1st meaningful commit
@@ -41,4 +41,10 @@ EOF
 - I see it clearly taking longer than the previous approach. Using the files breaks the memory
 - I'm fucked xDDDD
 
-
+7th commit
+- I was stuck so first of all I saw in cats documentation that I should be using MapRef instead of Ref
+- Secondly I could see when trying to run the code that the problem was in the parMapN of the compute
+- function and could be because an uncontrolled exception so I wrapped the access to the vector in a Delay
+- getting referencial transparency in that piece of code
+- Also gave the scheduler control again of the threads so I could get the scheduler balance the load
+- increasing the responsiveness

@@ -3,11 +3,7 @@ package petroschallenge
 import cats.effect.unsafe.implicits.global
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
-import petroschallenge.TriangleSolver.{
-  atomicTriangleResolver,
-  solveFromBottomToTop,
-  solveTriangleFromTop
-}
+import petroschallenge.TriangleSolver.{atomicTriangleResolver, atomicTriangleResolverWithDelay, solveFromBottomToTop, solveTriangleFromTop}
 
 class TriangleSolverSpec extends AnyFunSuite with Matchers {
 
@@ -96,5 +92,21 @@ class TriangleSolverSpec extends AnyFunSuite with Matchers {
     val (suma, camino) = atomicTriangleResolver(triangulo).unsafeRunSync()
     suma shouldBe 2 + 3 + 5 // 10
     camino shouldBe Vector(2, 3, 5)
+  }
+
+  test(
+    "must solve a minimum triangle top-down atomically with delay"
+  ) {
+    val triangulo = Vector(
+      Vector(1),
+      Vector(1, 2),
+      Vector(3, 2, 1),
+      Vector(4, 3, 7, 1),
+      Vector(7, 3, 2, 4, 5),
+      Vector(5, 4, 2, 6, 3, 7)
+    )
+    val (sum, path) = atomicTriangleResolverWithDelay(triangulo).unsafeRunSync()
+    sum shouldBe 1 + 1 + 2 + 3 + 2 + 2 // 11
+    path shouldBe Vector(1, 1, 2, 3, 2, 2)
   }
 }
