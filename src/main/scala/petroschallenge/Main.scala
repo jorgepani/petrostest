@@ -7,6 +7,7 @@ import petroschallenge.util.Parser
 
 object Main extends IOApp.Simple {
   def run: IO[Unit] =
+    IO.println(s"atomicTriangleResolver") *> //just for debugging
     stdin[IO](bufSize = 64 * 1024)
       .through(text.utf8.decode)
       .through(text.lines)
@@ -15,9 +16,9 @@ object Main extends IOApp.Simple {
       .evalMap(line => IO.fromEither(Parser.parseLine(line)))
       .compile
       .toVector
-      .map(TriangleSolver.solveTriangleFromTop)
+      .flatMap(TriangleSolver.atomicTriangleResolver)
       .flatMap { case (suma, minimalPath) =>
-        IO.println(s"Minimal path is: ${minimalPath.mkString(" + ")} = $suma")
+        IO.println(s"Minimal path is: ${minimalPath.mkString(" + ")} = $suma V3")
       }
       .handleErrorWith(e => IO.println(s"Error: ${e.getMessage}"))
 }
