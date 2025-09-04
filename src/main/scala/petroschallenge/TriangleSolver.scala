@@ -3,7 +3,7 @@ package petroschallenge
 import cats.effect.kernel.Outcome
 import cats.effect.std.MapRef
 import cats.effect.{Deferred, IO, Ref}
-import cats.implicits.catsSyntaxTuple2Parallel
+import cats.syntax.all._
 
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.{Map => MutableMap}
@@ -136,43 +136,43 @@ object TriangleSolver {
   def atomicTriangleResolverWithDelay(triangle: Vector[Vector[Int]]): IO[TriangleNode] =
     MapRef.ofConcurrentHashMap[IO, Key, Gate]().flatMap { memo =>
       def goOncePerElement(row: Int, col: Int): IO[TriangleNode] = {
-        val cell = memo((row, col)) // Ref[IO, Option[Gate]] para esta clave
+        val cell = memo((row, col))
 
-        // Describe el cálculo del nodo (captura exceptions con IO.delay)
+        // This is actually the job done (IO.delay to wrap in a safe context)
         val compute: IO[TriangleNode] =
           IO.delay(triangle(row)(col)).flatMap { v =>
             if (row == triangle.length - 1) IO.pure((v, Vector(v)))
             else
-              // Cede antes de ramificar para mejorar equidad bajo carga
-              IO.cede *> (goOncePerElement(row + 1, col), goOncePerElement(row + 1, col + 1)).parMapN {
-                case ((s1, p1), (s2, p2)) =>
+              // Gives back the control to the scheduler to help
+              IO.cede *> (goOncePerElement(row + 1, col), goOncePerElement(row + 1, col + 1))
+                .parMapN { case ((s1, p1), (s2, p2)) =>
                   if (s1 <= s2) (v + s1, v +: p1) else (v + s2, v +: p2)
-              }
+                }
           }
 
         for {
           existing <- cell.get
           out <- existing match {
             case Some(wait) =>
-              // Ya hay alguien calculándolo → esperamos su resultado (propaga error si lo hubo)
+              // We wait and propagate with rethrow just in case
               wait.get.rethrow
 
             case None =>
               for {
                 gate <- Deferred[IO, Either[Throwable, TriangleNode]]
-                // Reserva atómica por clave (single-flight)
+                // Atomic booking
                 claimed <- cell.modify {
-                  case s @ Some(w) => (s, Left(w))              // perdimos carrera → esperamos
-                  case None        => (Some(gate), Right(gate)) // ganamos → publicamos gate
+                  case s @ Some(w) => (s, Left(w)) // we have to wait
+                  case None        => (Some(gate), Right(gate))
                 }
                 res <- claimed match {
                   case Left(w)  => w.get.rethrow
                   case Right(g) =>
-                    // Completar SIEMPRE el gate y limpiar la clave en fallo/cancelación
+                    // I was worried about possible errors making other threads waiting forever
                     IO.uncancelable { poll =>
                       poll(compute).guaranteeCase {
                         case Outcome.Succeeded(ioV) =>
-                          ioV.flatMap(v => g.complete(Right(v))).void
+                          ioV.flatMap(v => g.complete(v.asRight)).void
                         case Outcome.Errored(e) =>
                           g.complete(Left(e)) *> cell.set(None)
                         case Outcome.Canceled() =>
