@@ -48,3 +48,8 @@ EOF
 - getting referencial transparency in that piece of code
 - Also gave the scheduler control again of the threads so I could get the scheduler balance the load
 - increasing the responsiveness
+
+Final commits
+- Cleaning the code
+- Adding some performance tests just to show the fastest solution (Not a big spoiler, it's bottom-up)
+- Trying to archieve to run the main class with the jar as stated in the exercise

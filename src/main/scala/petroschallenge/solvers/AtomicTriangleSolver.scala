@@ -7,7 +7,7 @@ import cats.syntax.all._
 import petroschallenge.model.MinimumTriangleSolver
 import petroschallenge.model.Types.{Gate, Key, TriangleNode}
 
-object AtomicTriangleSolver extends MinimumTriangleSolver{
+object AtomicTriangleSolver extends MinimumTriangleSolver {
 
   def atomicTriangleResolver(
       triangle: Vector[Vector[Int]]
