@@ -1,0 +1,5 @@
+package petroschallenge
+
+class MainSpec {
+
+}

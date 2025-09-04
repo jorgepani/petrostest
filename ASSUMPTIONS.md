@@ -1,7 +1,7 @@
 Assumptions 
 ==============================
 
-1st commit
+1st meaningful commit
 - assuming that we need to assembly a jar and run it on console
 - assuming that no matter the way I read the jar just need to be sure it get's the triangle
 - assuming the triangle is composed by integers to create a parser
@@ -15,3 +15,6 @@ cat << EOF | java -jar petrostest-assembly-0.1.0-SNAPSHOT.jar
 11 2 10 9  
 EOF  
 
+2nd commit
+- I decided to use a Vector to move inside the triangle in an easy way
+- Creating and testing a parser
