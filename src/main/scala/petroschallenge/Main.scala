@@ -7,7 +7,7 @@ import petroschallenge.util.Parser
 
 object Main extends IOApp.Simple {
   def run: IO[Unit] =
-    IO.println(s"atomicTriangleResolverWithDelay 4.0") *> //just for debugging
+    IO.println(s"atomicTriangleResolverWithDelay") *> //just for debugging
     stdin[IO](bufSize = 64 * 1024)
       .through(text.utf8.decode)
       .through(text.lines)

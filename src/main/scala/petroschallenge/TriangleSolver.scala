@@ -135,58 +135,72 @@ object TriangleSolver {
 
   def atomicTriangleResolverWithDelay(triangle: Vector[Vector[Int]]): IO[TriangleNode] =
     MapRef.ofConcurrentHashMap[IO, Key, Gate]().flatMap { memo =>
-      def goOncePerElement(row: Int, col: Int): IO[TriangleNode] = {
-        val cell = memo((row, col))
+      def go(row: Int, col: Int): IO[TriangleNode] = {
+        val cell: Ref[IO, Option[Gate]] = memo((row, col)) // Ref per key
 
-        // This is actually the job done (IO.delay to wrap in a safe context)
+        // Cálculo del nodo (capturando exceptions con IO.delay y cediendo antes de ramificar)
         val compute: IO[TriangleNode] =
           IO.delay(triangle(row)(col)).flatMap { v =>
             if (row == triangle.length - 1) IO.pure((v, Vector(v)))
             else
-              // Gives back the control to the scheduler to help
-              IO.cede *> (goOncePerElement(row + 1, col), goOncePerElement(row + 1, col + 1))
-                .parMapN { case ((s1, p1), (s2, p2)) =>
-                  if (s1 <= s2) (v + s1, v +: p1) else (v + s2, v +: p2)
-                }
+              IO.cede *> (go(row + 1, col), go(row + 1, col + 1)).parMapN { (l, r) =>
+                combine(v, l, r)
+              }
           }
 
         for {
           existing <- cell.get
           out <- existing match {
-            case Some(wait) =>
-              // We wait and propagate with rethrow just in case
-              wait.get.rethrow
-
+            case Some(wait) => wait.get.rethrow
             case None =>
               for {
                 gate <- Deferred[IO, Either[Throwable, TriangleNode]]
-                // Atomic booking
                 claimed <- cell.modify {
-                  case s @ Some(w) => (s, Left(w)) // we have to wait
+                  case s @ Some(w) => (s, Left(w)) // other took the slot
                   case None        => (Some(gate), Right(gate))
                 }
-                res <- claimed match {
-                  case Left(w)  => w.get.rethrow
-                  case Right(g) =>
-                    // I was worried about possible errors making other threads waiting forever
-                    IO.uncancelable { poll =>
-                      poll(compute).guaranteeCase {
-                        case Outcome.Succeeded(ioV) =>
-                          ioV.flatMap(v => g.complete(v.asRight)).void
-                        case Outcome.Errored(e) =>
-                          g.complete(Left(e)) *> cell.set(None)
-                        case Outcome.Canceled() =>
-                          g.complete(Left(new RuntimeException("Cancelled"))) *> cell.set(None)
-                      }
-                    }
-                }
+                res <- resolveClaim(claimed, compute, cell)
               } yield res
           }
         } yield out
       }
 
-      goOncePerElement(0, 0)
-
+      go(0, 0)
     }
+
+  /** Combines the root with the children to get the best sum */
+  private def combine(currentValue: Int, left: TriangleNode, right: TriangleNode): TriangleNode =
+    if (left._1 <= right._1) (currentValue + left._1, currentValue +: left._2)
+    else (currentValue + right._1, currentValue +: right._2)
+
+  /** Makes sure the computation is correct of releases the key otherwise */
+  private def runAsWinner(
+      compute: IO[TriangleNode],
+      g: Gate,
+      cell: Ref[IO, Option[Gate]]
+  ): IO[TriangleNode] =
+    IO.uncancelable { poll =>
+      poll(compute).guaranteeCase {
+        case Outcome.Succeeded(ioV) =>
+          ioV.flatMap(v => g.complete(Right(v))).void
+        case Outcome.Errored(e) =>
+          g.complete(Left(e)) *> cell.set(None) // avoid blocking to other threads
+        case Outcome.Canceled() =>
+          g.complete(Left(new RuntimeException("Cancelled"))) *> cell.set(
+            None
+          ) // clean key on cancelation
+      }
+    }
+
+  /** waits in case of loosing the race for the cell */
+  private def resolveClaim(
+      claimed: Either[Gate, Gate],
+      compute: IO[TriangleNode],
+      cell: Ref[IO, Option[Gate]]
+  ): IO[TriangleNode] =
+    claimed.fold(
+      wait => wait.get.rethrow,
+      g => runAsWinner(compute, g, cell)
+    )
 
 }
