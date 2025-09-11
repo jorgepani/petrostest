@@ -1,6 +1,7 @@
 package petroschallenge.solvers
 
-import cats.effect.kernel.Outcome
+import cats.effect.implicits.monadCancelOps
+import cats.effect.kernel.{MonadCancelThrow, Outcome}
 import cats.effect.std.MapRef
 import cats.effect.{Deferred, IO, Ref}
 import cats.syntax.all._
