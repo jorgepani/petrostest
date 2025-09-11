@@ -78,7 +78,7 @@ class SolverSpeedSpec extends AnyFunSuite with Matchers {
   }
 
   //It can break the stack
-  ignore("Benchmark Big triangle (data_small.txt)") {
+  test("Benchmark Big triangle (data_small.txt)") {
     bench("data_big.txt")
   }
 
